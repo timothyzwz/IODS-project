@@ -1,7 +1,89 @@
-# Insert chapter 2 title here
+# Chapter 2: Regression and model validation
 
-*Describe the work you have done this week and summarize your learning.*
+In this chapter, data regression and model validation is focused. A model dataset `learning2014` was given by the lecturer and originally consists of 60 variables and 183 responses from the survey "International Survey of Approaches to Learning". The original data is available from [here](http://www.helsinki.fi/~kvehkala/JYTmooc/JYTOPKYS3-data.txt). 
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using  
+The analysis data is focused on certain variables: `gender`, `age`, `attitude`, `deep`, `stra`, `surf` and `Points` by combining questions in the `learning2014` data. The detailed definitions of the combination variables can be found [here](http://www.helsinki.fi/~kvehkala/JYTmooc/JYTOPKYS2-meta.txt) (at the bottom of the file).The analysis data is obtained from data wrangling exercise. All combination variables are scaled to the original scales (by taking the mean). Observations where the exam points `Points` variable is zero are excluded.
+
+> Step 1. Reading and checking the data. 
+
+The analysis data is first read into the memmory and checked. 
+
+```{r}
+learning2014_selected <- read.table("data/learning2014_selected.txt")
+dim(learning2014_selected)
+str(learning2014_selected)
+
+```
+
+The data consists of 166 observations and 7 variables. Of the 7 variables, gender is a two-level factor variable, age and Points are integer variables, and the rest is number variables. 
+
+> Step 2. Summary and graphical overview.
+
+Here you can see an overview of the data and the summary of the variables in the data. Genders are marked with color (male = blue, female = red). As a first thought, there seems to be no correlation between `Age` and `attitude`, between `Age` and `deep`, between `Age` and `Points`, and between `deep` and `Points`. The highest correlation is found between the variables `Points` and `attitude`. If we split the `gender` variable, the correlation is high between `surf` and `deep` in male responses: while the same correlation simply does not apply to female responses.  
+
+```{r}
+library(GGally)
+library(ggplot2)
+p <- ggpairs(learning2014_selected, mapping = aes(col = gender, alpha = 0.7), lower = list(combo = wrap("facethist", bins = 20)))
+p
+```
+
+> Step 3. Regression fitting trial.
+
+Three variables, namely `attitude`, `stra`, and `surf`, are chosen to fit a regression model where the exam points `Points` is the target variable. The summary of the fitted model is shown below. From the `t value` as well as the p-value `Pr`, it shows that the variable `surf` has no statistically significant relationship with the target `Points` variable.
+
+```{r}
+regression_trial1 <- lm(Points ~ attitude + stra + surf, data = learning2014_selected)
+summary(regression_trial1)
+
+```
+
+
+> Step 4. Regression fitting. 
+
+ The regression is conducted once again without the `surf` variable. 
+
+```{r}
+regression_trial2 <- lm(Points ~ attitude + stra, data = learning2014_selected)
+summary(regression_trial2)
+
+```
+
+
+The summary report of the linear regression model gave a linear model with error information for the fitted data. The final regreesion model is $y=3.4658x_{1}+0.9137x_{2}+8.9729$, where $y=$`Points`, $x_{1}=$`attitude`, and $x_{2}=$`stra`. The Multiple R-squared (the coefficient of determination) is the proportion of the variance in the data that's explained by the model. The more variables, the larger this will be. The Adjusted one reduces that to account for the number of variables in the model [[ref](https://stats.stackexchange.com/questions/59250/how-to-interpret-the-output-of-the-summary-method-for-an-lm-object-in-r)]. Here the multiple R-squred value is 0.2048, which is not an ideal fit for the data. However, R-squared cannot determine whether the coefficient estimates and predictions are biased, which is why later the residual plots are assessed. R-squared also does not indicate whether a regression model is adequate. A low R-squared value can be present for a good model, or a high R-squared value for a model that does not fit the data [[ref](http://blog.minitab.com/blog/adventures-in-statistics-2/regression-analysis-how-do-i-interpret-r-squared-and-assess-the-goodness-of-fit)]. 
+
+> Step 5. Residual analysis. 
+
+In the linear regreesion model, the assumptions are: 
+
+1. Linearity: the target variable is modelled as a linear combination of the model parameters. 
+2. Normally distributed errors. 
+3. The errors are not correlated. 
+4. The errors have constant variance. 
+5. The size of a given error does not depend on the explanatory variables. 
+
+The residuals provide a method to explore the validity of the model assumptions. The following diagnostic plots are produced: 
+
+* Residuals vs Fitted values (assumption 4);
+* Normal QQ-plot (assumption 2); 
+* Residuals vs Leverage (single observation impact).
+
+```{r}
+par(mfrow = c(2,2))
+plot(regression_trial2, which = c(1, 2, 5))
+
+```
+
+
+
+The following conclusions are drawn from the residual analysis:
+
+* The Residuals vs Fitted values plot examines if the errors have constant variance. The graph shows a reasonable constant variance without any pattern. 
+* The Normal QQ-polt checks if the errors are normally distributed. We see from the graph a very good linear model fit, indicating a normally distributed error set. 
+* The Residuals vs Leverage confirms if there are any outliers with high leverage. From the graph, it shows that all the leverage are below 0.06, indicating good model fitting. 
+
+> Step 6. Concluding remarks. 
+
+Through graphical overview, data summary, linear regression trials, and residual analysis, the correlation in the data `learning2014_selected` is explored. The exam points `Points` variable is fitted with combination variables `attitude` and `surf` and showed a reasonable good linear trend, despite the relatively low R-squared value. The validity of the model is checked by means of multiple residual analysis. The model predicts that the exam points of the students are positively correlated with their attitude and surface approaches (check [here](http://www.helsinki.fi/~kvehkala/JYTmooc/JYTOPKYS2-meta.txt) for composition of the combination variables). 
+
+
