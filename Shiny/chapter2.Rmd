@@ -1,3 +1,7 @@
+---
+output: html_document
+runtime: shiny
+---
 # Chapter 2: Regression and model validation
 ***
 In this chapter, data regression and model validation is focused. A model dataset `learning2014` was given by the lecturer and originally consists of 60 variables and 183 responses from the survey "International Survey of Approaches to Learning". The original data is available from [here](http://www.helsinki.fi/~kvehkala/JYTmooc/JYTOPKYS3-data.txt). 
@@ -67,12 +71,27 @@ The residuals provide a method to explore the validity of the model assumptions.
 * Residuals vs Fitted values (*assumption 4*);
 * Normal QQ-plot (*assumption 2*); 
 * Residuals vs Leverage (*single observation impact*).
-
-**Figure 2**. Residual Plots (To see an interactive plot click [here](https://timothyzwz.shinyapps.io/IODS-project/), the file is hosted on shinnyapps server)
 ```{r}
-par(mfrow = c(2,2))
-plot(regression_trial2, which = c(1, 2, 5))
+library(shiny)
 ```
+
+```{r echo = FALSE}
+selectInput("data", "Choose a residual plot:",
+ c("Residuals vs Fitted values plot" = 1, "Normal QQ-plot" = 2, "Residuals vs Leverage plot" = 5))
+```
+See a plot:
+```{r echo = FALSE}
+renderPlot({
+  if(input[['data']] == 1){
+ plot(regression_trial2, 1, main = "Figure 2 (a). Residuals vs Fitted values plot.")}
+    if(input[['data']] == 2){
+ plot(regression_trial2, 2, main = "Figure 2 (b). Normal QQ-plot.")}
+    if(input[['data']] == 5){
+ plot(regression_trial2, 5, main = "Figure 2 (c). Residuals vs Leverage plot.")}
+})
+```
+
+
 
 
 The following conclusions are drawn from the residual analysis:

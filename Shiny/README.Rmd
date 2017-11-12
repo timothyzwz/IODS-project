@@ -1,0 +1,10 @@
+---
+title: "README"
+author: "Wenzhong Zhang"
+date: "05.11.2017"
+output: html_document
+---
+
+Some thing about the course...
+
+https://timothyzwz.github.io/IODS-project/

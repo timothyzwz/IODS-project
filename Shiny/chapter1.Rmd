@@ -1,0 +1,18 @@
+
+# INTRODUCTION TO OPEN DATA SCIENCE
+
+## HYMY005 (5 credits)
+
+***
+> **General info**
+
+* Language: English, campus: City Centre.
+* Period 2, starting 31 Oct 2017, ending 18 Dec 2017.
+* Weekly class (optional): Tue 14-16, Unioninkatu 35, auditorium. 
+  + Please bring a laptop computer (Mac/Windows/Linux) to the class. 
+  + Prepare to work hard, several hours each week. 
+  
+
+> **Link to Github repository**
+
+https://github.com/timothyzwz/IODS-project

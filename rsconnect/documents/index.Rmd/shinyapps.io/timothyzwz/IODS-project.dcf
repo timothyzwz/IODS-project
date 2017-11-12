@@ -1,0 +1,12 @@
+name: IODS-project
+title: IODS-project
+username:
+account: timothyzwz
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 234503
+bundleId: 1070750
+url: https://timothyzwz.shinyapps.io/IODS-project/
+when: 1510451213.45423
+asMultiple: TRUE
+asStatic: FALSE

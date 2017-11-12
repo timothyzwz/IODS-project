@@ -1,0 +1,26 @@
+---
+title: "IODS course project"
+author: "Wenzhong Zhang"
+output:
+  html_document:
+    theme: sandstone
+    toc: true
+    toc_depth: 2
+    fig_caption: true
+    fig_width: 6
+    fig_height: 4
+    code_folding: hide
+runtime: shiny
+---
+
+***
+  
+```{r child = "chapter1.Rmd"}
+```
+  
+***
+  
+```{r child = "chapter2.Rmd"}
+```
+
+***
