@@ -1,0 +1,236 @@
+# Chapter 3: Logistic Regression
+***
+In this chapter, logitic regression is focused. Two model datasets were obtained from UCI Machine Learning Repository. This data approach student achievement in secondary education of two Portuguese schools. The data attributes include student grades, demographic, social and school related features) and it was collected by using school reports and questionnaires. Two datasets are provided regarding the performance in two distinct subjects: Mathematics (mat) and Portuguese language (por). The original data is available from [here](https://archive.ics.uci.edu/ml/datasets/Student+Performance). 
+
+***
+
+> **Step 1.** Reading and checking the data. 
+
+The two datasets were joined by using the variables: `school`, `sex`, `age`, `address`, `famsize`, `Pstatus`, `Medu`, `Fedu`, `Mjob`, `Fjob`, `reason`, `nursery`, and `internet` as (student) identifier. The analysis data is obtained from data wrangling exercise. A new logical column `high_use` and it is TRUE if the average weekday and weekend alcohol consumption is greater than 2.  In total, there are 35 variables and 382 observations. 
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+alc <- read.table("data/alc.txt", sep = " ", header = T)
+dim(alc)
+colnames(alc)
+
+```
+
+***
+
+> **Step 2.** Generating and Validating Hypothesis. 
+
+Hypotheses that I am interested in are: 
+
+1. High alcohol consumption (`alc_use`) is positively related with the amount of free time (`freetime`). 
+2. High alcohol consumption (`alc_use`) is positively related with failures (`failures`). 
+3. High alcohol consumption (`alc_use`) is negatively related with the average scores from final grade (`G3`). 
+4. High alcohol consumption (`alc_use`) is negatively related with health conditions (`health`).
+
+***
+
+####Approach 1: Tabular Counting
+
+Tabular counting of those variables vs. the average alcohol consumption in each category is produced. The positive correlation between `freetime` and `alc_use`, between `failures` and `alc_use` are very obviously. While the hypotheses 3 and 4 are not evident from the tables. 
+
+**Hypothesis 1:** 
+```{r}
+alc %>% group_by(freetime) %>% summarise(count = n(), alcohol_consumption = mean(alc_use))
+```
+**Hypothesis 2:** 
+```{r}
+alc %>% group_by(failures) %>% summarise(count = n(), alcohol_consumption = mean(alc_use))
+```
+**Hypothesis 3:** 
+```{r}
+alc %>% group_by(G3) %>% summarise(count = n(), alcohol_consumption = mean(alc_use))
+```
+**Hypothesis 4:** 
+```{r}
+alc %>% group_by(health) %>% summarise(count = n(), alcohol_consumption = mean(alc_use))
+
+```
+
+***
+
+####Approach 2: Linear Regression
+
+#####Regression
+
+From linear regression modelling, hypotheses 1, 2 and 3 are all statistically significant (p<0.01), while it seems that hypothesis 4 is not valid. 
+
+**Hypothesis 1:**
+```{r}
+regression_hp1 <- lm(freetime ~ alc_use, data = alc)
+summary(regression_hp1)
+```
+**Hypothesis 2:**
+```{r}
+regression_hp2 <- lm(failures ~ alc_use, data = alc)
+summary(regression_hp2)
+```
+**Hypothesis 3:**
+```{r}
+regression_hp3 <- lm(G3 ~ alc_use, data = alc)
+summary(regression_hp3)
+```
+**Hypothesis 4:**
+```{r}
+regression_hp4 <- lm(health ~ alc_use, data = alc)
+summary(regression_hp4)
+```
+
+***
+
+#####Error Distribution
+
+For hypotheses modeling, the error distributions were explored. From the picutres, only the Normal Q-Q plot for the 2nd hypothesis is questionable. This translate into that the error might not be normally distributed. 
+
+**Hypothesis 1:** 
+```{r}
+par(mfrow = c(2,2))
+plot(regression_hp1, which = c(1, 2, 5))
+```
+
+**Hypothesis 2:** 
+```{r}
+par(mfrow = c(2,2))
+plot(regression_hp2, which = c(1, 2, 5))
+```
+
+**Hypothesis 3:** 
+```{r}
+par(mfrow = c(2,2))
+plot(regression_hp3, which = c(1, 2, 5))
+```
+
+***
+
+####Approach 3: Logistic Regression
+
+The aforementioned hypotheses are again studied by logistic regression using the variable `high_use`, which is `True` if the average weekday and weekend alcohol consumption is greater than 2.
+
+**Hypothesis 1:** 
+```{r}
+m1 <- glm(high_use ~ freetime, data = alc, family = "binomial")
+summary(m1)
+OR <- coef(m1) %>% exp
+CI <- confint(m1) %>% exp
+cbind(OR, CI)
+```
+
+**Hypothesis 2:** 
+```{r}
+m2 <- glm(high_use ~ failures, data = alc, family = "binomial")
+summary(m2)
+OR <- coef(m2) %>% exp
+CI <- confint(m2) %>% exp
+cbind(OR, CI)
+```
+
+**Hypothesis 3:** 
+```{r}
+m3 <- glm(high_use ~ G3, data = alc, family = "binomial")
+summary(m3)
+OR <- coef(m3) %>% exp
+CI <- confint(m3) %>% exp
+cbind(OR, CI)
+```
+
+**Hypothesis 4:** 
+```{r}
+m4 <- glm(high_use ~ health, data = alc, family = "binomial")
+summary(m4)
+OR <- coef(m4) %>% exp
+CI <- confint(m4) %>% exp
+cbind(OR, CI)
+```
+
+***
+
+#####**Summary of logistic regressions**
+
+Odds ratios (OR) are used to compare the relative odds of the occurrence of the outcome of interest (`high_use`), given the change to the variable of interest (4 assumptions here). 
+
+**Table**. Comparison of ORs and their confidence intervals. 
+
+Variable | OR | 2.5% | 97.5%
+------- | ------ | ------ | -------
+`freetime` | 1.41 | 1.12 | 1.79
+`failures` | 1.70 | 1.20 | 2.45
+`G3` | 0.92 | 0.86 | 0.98
+`health` | 1.10 | 0.94 | 1.29
+
+From the results, we see that for `freetime` and `failures`, the ORs are all well above 1 and their confidence intervals does not include 1. For `G3`, the OR is below 1 and its confidence interval does not span till 1. For `health`, the OR is around 1 and the confidence interval spans 1. To sum it up, the first three hypotheses are statistially significant and correct, while the 4th hypothesis is not valid statistically. 
+
+***
+
+> **Step 3.** Predictive Power of the Model. 
+
+Using the variables which, according to my logistic regression model, had a statistical relationship with high/low alcohol consumption (namely `freetime`, `failures` and `G3`), explore the predictive power of the model. The prediction is added as an additional column to the `alc` dataset. It is `TRUE` if the probability is greater than 0.5, otherwise it is `FALSE`. 
+```{r}
+m <- glm(high_use ~ freetime + failures + G3, data = alc, family = "binomial")
+probabilities <- predict(m, type = "response")
+alc <- mutate(alc, probability = probabilities)
+alc <- mutate(alc, prediction = probability > 0.5)
+```
+
+The tabulation of predictions vs. the actual values is listed here: 
+```{r}
+table(high_use = alc$high_use, prediction = alc$prediction)
+```
+The graphic visualization of both the actual values and the predictions is provided here: 
+```{r}
+g <- ggplot(alc, aes(x = probability, y = high_use, col = prediction))
+g + geom_point() + ggtitle('Prediction and actual value distributions')
+```
+
+The total proportion of inaccurately classified individuals (= the training error) is computed here: 
+```{r}
+table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table() %>% addmargins()
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+loss_func(class = alc$high_use, prob = alc$probability)
+```
+
+The results showed that around 30% of the predictions are not correct, while on the other hand 70% of the predictions are correct. This is much better than simple guessing strategy, where the odds of guessing correctly would be approximately 50%. 
+
+ ***
+ 
+
+> **Step 4.** Cross-validation. 
+
+10-fold cross-validation is performed subsequently. The prediction error is 0.31, which is larger than that of the model introduced in the Datacamp. 
+```{r}
+library(boot)
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
+cv$delta[1]
+```
+
+Let's try defining another model using many vairables, including `freetime`, `failures`, `studytime`, `absences`, `G1`, `G2`, `G3`, `romantic`, and `goout`. We use the exact same treatment to the model, and this time the prediction error from 10-fold cross-validation is around 0.25. 
+```{r}
+m2 <- glm(high_use ~ freetime + failures + studytime + absences + G1 + G2 + G3 + romantic + goout, data = alc, family = "binomial")
+probabilities2 <- predict(m2, type = "response")
+alc <- mutate(alc, probability2 = probabilities2)
+alc <- mutate(alc, prediction2 = probability > 0.5)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+loss_func(class = alc$high_use, prob = alc$probability2)
+cv2 <- cv.glm(data = alc, cost = loss_func, glmfit = m2, K = 10)
+cv2$delta[1]
+```
+
+ 
+ 
+ 
+ 
+> **Concluding remarks.** 
+
+Logistic regression modelling and prediction are explored in this chapter. The chosen assumptions are validated by means of linear regression modeling, logistic regression modelling and statistical check. Three our of the four assumptions (`freetime`, `failures` and `G3`) seemed to be statistically sound while the other one (`health`) did not seem to be relevant. The effect of alcohol consumption on the health conditions seem to have more long-term effect rather than short-term effect. The prediction of the `high_use` variable by the logistic regression model utilizing three assumptions generated a training error of approximately 30%. It is recommended that more vairables are taken into considerations to have a better-performing logistic regression model. 
