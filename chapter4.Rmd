@@ -1,0 +1,154 @@
+# Chapter 4: Clustering and classification
+***
+The topics of this chapter - clustering and classification - are handy and visual tools of exploring statistical data. Clustering means that some points (or observations) of the data are in some sense closer to each other than some other points. In other words, the data points do not comprise a homogeneous sample, but instead, it is somehow clustered. 
+
+***
+
+> **Step 1.** Loading and checking the data. 
+
+The `boston` data summaries the housing values in suburbs of Boston back in 1970's. It contains 506 observations of 14 different variables. Detailed explanation of the variables can be found [here](https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html). All the variables are either numeric or integerial. 
+
+```{r}
+library(MASS)
+data("Boston")
+str(Boston)
+```
+
+A graphical overview, a summary and a correlation matrix were plotted for `Boston` data and shown below. You can find the distribution of the data in the summary table with some statistical measures. 
+```{r}
+library(corrplot)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+pairs(Boston)
+summary(Boston)
+```
+
+The correlation matrix shown here are in the form of a heat-map. Dark red color meaning negatively correlated, dark blue color meaning positively correlated, and white meaning no correlation. You can easily spot certain pairs that have stronger correlations from the graph.  
+```{r}
+cor_matrix <- cor(Boston) 
+corrplot(cor_matrix, method="color", order="hclust", type = "upper", cl.pos = "r", tl.pos = "d", tl.cex = 0.6, title = "Correlation plots for Boston data frame", mar=c(0,0,1,0))
+```
+
+
+> **Step 2.** Scaling and preparing the data for categorising.
+
+The `Boston` data is standardised and its summary printed here. Scaling of data may be useful and/or necessary under certain circumstances (e.g. when variables span different ranges). Standardization is the scaling procedure which results in a zero mean and unit variance of any descriptor variable. For every data value the mean ¦Ì has to be subtracted, and the result has to be divided by the standard deviation ¦Ò (note that the order of these two operations must not be reversed):
+```{r}
+boston_scaled <- scale(Boston)
+summary(boston_scaled)
+boston_scaled <- as.data.frame(boston_scaled)
+```
+
+A categorical variable of the crime rate is created in the Boston dataset (from the scaled crime rate). The quantiles are used as the break points in the categorical variable. The old crime rate variable from the dataset is deleted. 
+
+```{r}
+bins <- quantile(boston_scaled$crim)
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, labels = c("low", "med_low", "med_high", "high"))
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+boston_scaled <- data.frame(boston_scaled, crime)
+```
+
+Divide the dataset to train and test sets, so that 80% of the data belongs to the train set.
+```{r}
+n <- nrow(boston_scaled)
+ind <- sample(n,  size = n * 0.8)
+train <- boston_scaled[ind,]
+test <- boston_scaled[-ind,]
+correct_classes <- test$crime
+test <- dplyr::select(test, -crime)
+```
+
+> **Step 3.** Linear discriminant analysis (LDA).
+
+Linear Discriminant analysis is a classification (and dimension reduction) method. It finds the (linear) combination of the variables that separate the target variable classes. Here we fit the `crime` variable by all other variables available in the dataset as predictors. 
+
+```{r}
+lda.fit <- lda(crime ~ ., data = train)
+lda.fit
+```
+
+The data is divided into four colours based on the `crime` category and the plot below shows the LDA results of them. 
+```{r}
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+classes <- as.numeric(train$crime)
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 3)
+```
+
+> **Step 4.** Prediction by LDA.
+
+The prediction of the classes with the LDA model on the test data was conducted. 
+```{r}
+lda.pred <- predict(lda.fit, newdata = test)
+```
+
+Cross tabulate the results with the crime categories from the test set. It seems that most of the predictions are indeed correct. 
+```{r}
+table(correct = correct_classes, predicted = lda.pred$class) %>% addmargins
+```
+
+The total proportion of inaccurately predicted individuals is computed here: 
+```{r}
+table(correct = correct_classes, predicted = lda.pred$class) %>% prop.table() %>% addmargins()
+loss_func <- function(class, prob) {
+  n_wrong <- class != prob
+  mean(n_wrong)
+}
+loss_func(class = correct_classes, prob = lda.pred$class)
+```
+Around 33% of the predictions are not correct, which seems to be a good prediction. 
+
+> **Step 5.** Distance measures.
+
+Similarity or dissimilarity of objects can be measured with distance measures. There are many different measures for different types of data. The most common or "normal" distance measure is Euclidean distance.
+
+Here, we reload and standardsize the `Boston` dataset. 
+```{r}
+library(MASS)
+data('Boston')
+boston_scaled <- scale(Boston)
+```
+
+The distances between the observations are calculated: 
+
+1. Euclidean distance
+```{r}
+dist_eu <- dist(boston_scaled)
+summary(dist_eu)
+```
+
+2. Manhattan distance
+```{r}
+dist_man <- dist(boston_scaled, method = "manhattan")
+summary(dist_man)
+```
+
+To find the optimal K-means value, the total of within cluster sum of squares (WCSS) vs. the number of cluster changes is plotted. 
+```{r}
+library(ggplot2)
+set.seed(123)
+k_max <- 10
+twcss <- sapply(1:k_max, function(k){kmeans(boston_scaled, k)$tot.withinss})
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+```
+
+The optimal number of clusters is when the total WCSS drops radically. In this case, the optimal K-means values is 2. The clusters are then visualised here: 
+
+```{r}
+km <-kmeans(boston_scaled, centers = 2)
+pairs(boston_scaled, col = km$cluster)
+```
+
+The data in the standardised Boston dataset are classified into two clusters based on the K-means analysis. From the graph you can see that the data from the same cluster seem to be continurous and forms a lump in all distributions. However, we cannot simply say that the two clusters is the best fit for the current data. More realistic questions need to be taken into consideration when deciding the number of the clusters. 
+
+> **Concluding remarks.** 
+
+In the current chapter, we explored the clustering and classification of the data. LDA was used for fitting and predicting the variable based on the training data and gave a relatively good predicting power. The data are clustered by K-means analysis and the opitmal K-means values are explored. 
