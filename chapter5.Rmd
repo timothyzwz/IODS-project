@@ -1,0 +1,40 @@
+# Chapter 5: Dimensionality reduction techniques
+***
+In this chapter, we learn the basics of two data science based ways of reducing the dimensions. The key method is principal component analysis (PCA), which reduces any number of measured (continuous) and correlated variables into a few uncorrelated components that collect together as much variance as possible from the original variables. The most important components can be then used for various purposes, e.g., drawing scatterplots and other fancy graphs that would be quite impossible to achieve with the original variables and too many dimensions. 
+
+***
+
+Load the ¡®human¡¯ data into R. Explore the structure and the dimensions of the data and describe the dataset briefly, assuming the reader has no previous knowledge of it (this is now close to the reality, since you have named the variables yourself). (0-1 point)
+
+> **Step 1.** Loading and checking the data. 
+
+The `human` data originates from the United Nations Development Programme.The Human Development Index (HDI) is a summary measure of average achievement in key dimensions of human development: a long and healthy life, being knowledgeable and have a decent standard of living. The HDI is the geometric mean of normalized indices for each of the three dimensions. The data contains 155 observations and 8 variables with the country as the `rolenames`. Detailed explanation of the variables can be found [here](http://hdr.undp.org/en/content/human-development-index-hdi). All the variables are either numeric or integerial. 
+
+```{r}
+human <- read.table("Data/human.txt")
+human <- within(human, {
+  gni <- as.numeric(as.character(gni))
+})
+str(human)
+dim(human)
+```
+
+A graphical overview, a summary and a correlation matrix were plotted for `human` data and shown below. You can find the distribution of the data in the summary table with some statistical measures. 
+```{r}
+library(corrplot)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(GGally)
+pairs(human)
+summary(human)
+```
+
+The correlation matrix shown here are in the form of a heat-map. Dark red color meaning negatively correlated, dark blue color meaning positively correlated, and white meaning no correlation. You can easily spot certain pairs that have stronger correlations from the graph.  
+```{r}
+cor(human) %>% corrplot(method="color", order="hclust", type = "upper", cl.pos = "r", tl.pos = "d", tl.cex = 0.6, title = "Correlation plots for human", mar=c(0,0,1,0))
+```
+
+> **Concluding remarks.** 
+
+In the current chapter,
