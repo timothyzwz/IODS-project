@@ -4,16 +4,17 @@ In this chapter, we learn the basics of two data science based ways of reducing 
 
 ***
 
-Load the ¡®human¡¯ data into R. Explore the structure and the dimensions of the data and describe the dataset briefly, assuming the reader has no previous knowledge of it (this is now close to the reality, since you have named the variables yourself). (0-1 point)
-
 > **Step 1.** Loading and checking the data. 
 
-The `human` data originates from the United Nations Development Programme.The Human Development Index (HDI) is a summary measure of average achievement in key dimensions of human development: a long and healthy life, being knowledgeable and have a decent standard of living. The HDI is the geometric mean of normalized indices for each of the three dimensions. The data contains 155 observations and 8 variables with the country as the `rolenames`. Detailed explanation of the variables can be found [here](http://hdr.undp.org/en/content/human-development-index-hdi). All the variables are either numeric or integerial. 
+The `human` data originates from the United Nations Development Programme.The Human Development Index (HDI) is a summary measure of average achievement in key dimensions of human development: a long and healthy life, being knowledgeable and have a decent standard of living. The HDI is the geometric mean of normalized indices for each of the three dimensions. The data contains 155 observations and 8 variables with the country as the `rolenames`. Detailed explanation of the variables can be found [here](http://hdr.undp.org/en/content/human-development-index-hdi). All the variables are either numeric or integerial (`dni` was changed from factor variable to numeric variable). 
 
 ```{r}
 human <- read.table("Data/human.txt")
 human <- within(human, {
-  gni <- as.numeric(as.character(gni))
+  gni <- as.character(gni)
+})
+human <- within(human, {
+  gni <- as.numeric(sub(",", "", gni, fixed = TRUE))
 })
 str(human)
 dim(human)
@@ -34,6 +35,47 @@ The correlation matrix shown here are in the form of a heat-map. Dark red color 
 ```{r}
 cor(human) %>% corrplot(method="color", order="hclust", type = "upper", cl.pos = "r", tl.pos = "d", tl.cex = 0.6, title = "Correlation plots for human", mar=c(0,0,1,0))
 ```
+
+> **Step 2.** Perform principal component analysis (PCA) on the not standardized human data. 
+
+The requested PCA was performed on the non-standardized human data. 
+```{r}
+pca_human <- prcomp(human)
+s <- summary(pca_human)
+s
+```
+
+We can see from the summary of the PCA that the `gni` variable captured 100% of the variability. This is of course not correct. Why? Simply because the values are too huge compared to all other variables. Here the biplot is drawn and you can see that the arrow of `gni` is parallel to the PC1, meaning that they are basially the same determining factor during the analysis. 
+```{r}
+pca_pr <- round(100*s$importance[2, ], digits = 1)
+pca_pr
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+```
+
+> **Step 3.** Perform principal component analysis (PCA) on the standardized human data.
+
+To overcome the problem with regards to PCA analysis. The `human` data is first standardized. 
+```{r}
+human_std <- scale(human)
+summary(human_std)
+```
+
+The PCA is again run on the standardized data: 
+```{r}
+pca_human_std <- prcomp(human_std)
+s2 <- summary(pca_human_std)
+s2
+```
+Now we can see that the PC 1 captured 53.6% of variance and PC 2 16.2%. The biplot is again drawn. From the biplot, we can see that actually many variables are almost parallel to PC 1, including `edutime`, `eduRatio`, `teenbirth`, `dni`, `mortalityM` and `lifebirth`. The other two variables `ParF` and `labRatio` are almost paraelle to PC 2. We see that `dni` does not have determining power over all the data thanks to the standardization process.  
+
+```{r}
+pca_pr_std <- round(100*s2$importance[2, ], digits = 1)
+pca_pr_std
+pc_lab_std <- paste0(names(pca_pr), " (", pca_pr_std, "%)")
+biplot(pca_human_std, cex = c(0.5, 0.8), col = c("grey40", "deeppink2"), xlab = pc_lab_std[1], ylab = pc_lab_std[2])
+```
+
 
 > **Concluding remarks.** 
 
