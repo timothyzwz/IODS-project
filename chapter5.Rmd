@@ -27,6 +27,7 @@ library(tidyverse)
 library(dplyr)
 library(tidyr)
 library(GGally)
+library(ggplot2)
 pairs(human)
 summary(human)
 ```
@@ -67,7 +68,7 @@ pca_human_std <- prcomp(human_std)
 s2 <- summary(pca_human_std)
 s2
 ```
-Now we can see that the PC 1 captured 53.6% of variance and PC 2 16.2%. The biplot is again drawn. From the biplot, we can see that actually many variables are almost parallel to PC 1, including `edutime`, `eduRatio`, `teenbirth`, `dni`, `mortalityM` and `lifebirth`. The other two variables `ParF` and `labRatio` are almost paraelle to PC 2. We see that `dni` does not have determining power over all the data thanks to the standardization process.  
+Now we can see that the PC 1 captured 53.6% of variance and PC 2 16.2%. The biplot is again drawn. 
 
 ```{r}
 pca_pr_std <- round(100*s2$importance[2, ], digits = 1)
@@ -76,7 +77,50 @@ pc_lab_std <- paste0(names(pca_pr), " (", pca_pr_std, "%)")
 biplot(pca_human_std, cex = c(0.5, 0.8), col = c("grey40", "deeppink2"), xlab = pc_lab_std[1], ylab = pc_lab_std[2])
 ```
 
+From the biplot, we can see that actually many variables are almost parallel to PC 1, including `edutime`, `eduRatio`, `teenbirth`, `dni`, `mortalityM` and `lifebirth`. The other two variables `ParF` and `labRatio` are almost paraelle to PC 2. We see that `dni` does not have determining power over all the data thanks to the standardization process.  
+
+> **Step 3.** Analysis of TEA data. 
+
+Loading the dataset from the package `FactoMineR` and explore the data briefly. The data has 300 observations and 36 variables. Most of the variables are factor variables with only the `age` variable as numeric. 
+
+```{r}
+library(FactoMineR)
+data(tea)
+TEA_ <- tea
+str(TEA_)
+dim(TEA_)
+```
+
+Here, we select a subset of the `tea` data set for analysis. 
+```{r}
+kc <- c("Tea", "escape.exoticism", "spirituality", "healthy", "diuretic", "friendliness", "sophisticated", "slimming", "exciting", "relaxing", "effect.on.health")
+tea_type_reason <- dplyr::select(TEA_, one_of(kc))
+summary(tea_type_reason)
+str(tea_type_reason)
+```
+
+The selected data set is based on different tea types and different reasons for drinking tea. It is visualized here by bar plots. 
+
+```{r}
+gather(tea_type_reason) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 5))
+```
+
+The MCA of the selected data is conducted. The summary of the MCA is printed here:
+
+```{r}
+mca <- MCA(tea_type_reason, graph = FALSE)
+summary(mca)
+```
+
+Overall, 12 dimensions are need to fully cover the variability of the variables. We can see that none of the variables contributed to more than 0.5 squared correlation to any computed dimension. From the v.test values, we can see that if the absolute value of the v.test is larger than 1.96, then the coordinate is significately different from 0. This means that `Dim.1` is strongly related to the attitude of why people are drinking tea, but not to the type of the tea. 
+
+Next, the variable biplot of the MCA is drawn. 
+```{r}
+plot(mca, invisible=c("ind"), habillage = "quali")
+```
+
+It seems that nothing really stand out in this MCA analysis. All dimensions captured similar amount of variablility and the most significant dimensions `Dim.1` and `Dim.2` is not strongly correlated with any of the variables. 
 
 > **Concluding remarks.** 
 
-In the current chapter,
+In this chapter, PCA and MCA analysis were covered. For data including multiple variables, it is often useful to reduce the variable dimensions so that the data can be plot and visualized easilier. The most useful methods are PCA and MCA, both of which effectively reduce the dimension. 
